@@ -1,6 +1,4 @@
-package com.study.datastructure.linkedList;
-
-import org.w3c.dom.Node;
+package com.study.datastructure.자료구조;
 
 public class linkedList {
     Node header;

@@ -1,7 +1,6 @@
-package com.study.datastructure.linkedList;
+package com.study.datastructure.자료구조;
 
 import java.util.EmptyStackException;
-import java.util.Stack;
 
 public class stack {
     static class Stack<T>{
