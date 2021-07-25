@@ -1,6 +1,10 @@
 package com.study.datastructure.자료구조;
 
+import org.w3c.dom.Node;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
@@ -9,6 +13,7 @@ public class tree {
         int data;
         Node left;
         Node right;
+        Node parent;
         Node(int data){
             this.data = data;
         }
@@ -16,16 +21,20 @@ public class tree {
     }
 
     static class Tree {
-        public Node root;
-
-        public Tree() {
-
-        }
+        Node root;
+        HashMap<Integer, Node> rootMap;
+        int size;
+        public Tree() {}
 
         Tree(int size){
-            root = makeBST(0, size - 1);
-            root.right.right.right.right = new Node(10);
+            this.size = size;
+            rootMap = new HashMap<Integer, Node>();
+            //root = makeBST(0, size - 1);
+            root = makeBST(0, size - 1, null);
+            //root.right.right.right.right = new Node(10);
             //root.right.right.left = new Node(11);
+            //root.right.right.right.left = new Node(10);
+            //this.size++;
         }
 
         public void setRoot(Node node){
@@ -107,6 +116,17 @@ public class tree {
             return node;
         }
 
+        Node makeBST(int start, int end, Node parent) {
+            if (start > end) return null;
+            int mid = (start + end) / 2;
+            Node node = new Node(mid);
+            node.left = makeBST(start, mid - 1, node);
+            node.right = makeBST(mid + 1, end, node);
+            node.parent = parent;
+            rootMap.put(mid, node);
+            return node;
+        }
+
         /**
          * tree의 balance 확인하기
          * @param root
@@ -185,6 +205,80 @@ public class tree {
             BSTtoList(root.left, lists, level + 1);
             BSTtoList(root.right, lists, level + 1);
         }
+
+        /**
+         * 주어진 트리가 이진검색트리인지 확인하기
+         * @return
+         */
+        boolean isValidateBST1(){
+            int[] array = new int[size];
+            inorder(root, array);
+            for (int i = 1; i < array.length; i++){
+                if (array[i] < array[i - 1]){
+                    return false;
+                }
+            }
+            return true;
+        }
+        int index = 0;
+        void inorder(Node root, int[] array){
+            if (root != null){
+                inorder(root.left, array);
+                array[index] = root.data;
+                index++;
+                inorder(root.right, array);
+            }
+        }
+        Integer last_printed = null;
+        boolean isValidateBST2(){
+            return isValidateBST2(root);
+        }
+        boolean isValidateBST2(Node n){
+            if (n == null) return true;
+            if (!isValidateBST2(n.left)) return false;
+            if (last_printed != null && n.data < last_printed){
+                return false;
+            }
+            last_printed = n.data;
+            if (!isValidateBST2(n.right)) return false;
+            return true;
+        }
+        boolean isValidateBST3(){
+            return isValidateBST3(root, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        }
+        boolean isValidateBST3(Node n, int min, int max){
+            if (n == null){
+                return true;
+            }
+            if (n.data < min || n.data > max){
+                return false;
+            }
+            if (!isValidateBST3(n.left, min, n.data) || !isValidateBST3(n.right, n.data, max)){
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * 이진검색트리에서 다음노드 찾기
+         * @param node
+         */
+        void findNext(Node node){
+            if (node.right == null){
+                System.out.println(findAbove(node.parent, node).data + " is " + node.data + "'s next");
+            } else {
+                System.out.println(findBelow(node.right).data + " is " + node.data + "'s next");
+            }
+        }
+        Node findAbove(Node root, Node child){
+            if (root == null) return null;
+            if (root.left == child) return root;
+            return findAbove(root.parent, root);
+        }
+        Node findBelow(Node root){
+            if (root.left == null) return root;
+            return findBelow(root.left);
+        }
         ArrayList<LinkedList<Node>> BSTtoList2(){
             ArrayList<LinkedList<Node>> result = new ArrayList<LinkedList<Node>>();
             LinkedList<Node> current = new LinkedList<Node>();
@@ -209,6 +303,124 @@ public class tree {
                 }
                 System.out.println();
             }
+        }
+        /**
+         * Tree에서 두노드의 첫번째 공통부모 찾기
+         */
+        Node getNode(int data){
+            return rootMap.get(data);
+        }
+        boolean covers(Node root, Node node){
+            if (root == null) return false;
+            if (root == node) return true;
+            return covers(root.left, node) || covers(root.right, node);
+        }
+        Node commonAncestor(int d1, int d2){
+            Node p = getNode(d1);
+            Node q = getNode(d2);
+            int diff = depth(p) - depth(q);
+            Node first = diff > 0 ? q : p;
+            Node second = diff > 0 ? p : q;
+            second = goUpBy(second, Math.abs(diff));
+            while (first != second && first != null && second != null){
+                first = first.parent;
+                second = second.parent;
+            }
+            return first == null || second == null ? null : first;
+        }
+        Node commonAncestor2(int d1, int d2){
+            Node p = getNode(d1);
+            Node q = getNode(d2);
+            if (!covers(root, p) || !covers(root, q)){
+                return null;
+            } else if (covers(p, q)){
+                return p;
+            } else if (covers(q, p)){
+                return q;
+            }
+            Node sibling = getSibling(p);
+            Node parent = p.parent;
+            while (!covers(sibling, q)){
+                sibling = getSibling(parent);
+                parent = parent.parent;
+            }
+            return parent;
+        }
+        Node commonAncestor3(int d1, int d2){
+            Node p = getNode(d1);
+            Node q = getNode(d2);
+            if (!covers(root, p) || !covers(root, q)){
+                return null;
+            }
+            return ancestorHelper(root, p , q);
+        }
+        class Result{
+            Node node;
+            boolean isAncestor;
+            Result (Node n, boolean isAnc){
+                node = n;
+                isAncestor = isAnc;
+            }
+        }
+        Node commonAncestor4(int d1, int d2){
+            Node p = getNode(d1);
+            Node q = getNode(d2);
+            Result r = commonAncestor(root, p, q);
+            if (r.isAncestor){
+                return r.node;
+            }
+            return null;
+        }
+        Result commonAncestor(Node root, Node p, Node q){
+            if (root == null) return new Result(null, false);
+            if (root == p && root == q) return new Result(null, true);
+            Result rx = commonAncestor(root.left, p, q);
+            if (rx.isAncestor) return rx;
+            Result ry = commonAncestor(root.right, p, q);
+            if (ry.isAncestor) return ry;
+
+            if (rx.node != null && ry.node != null) {
+                return new Result(root, true);
+            } else if (root == p || root == q){
+                boolean isAncestor = rx.node != null || ry.node != null;
+                return new Result(root, isAncestor);
+            } else {
+                return new Result(rx.node != null ? rx.node : ry.node, false);
+            }
+        }
+        Node ancestorHelper(Node root, Node p, Node q){
+            if (root == null || root == p || root == q){
+                return root;
+            }
+            boolean pIsOnLeft = covers(root.left, p);
+            boolean qIsOnLeft = covers(root.left, q);
+            if (pIsOnLeft != qIsOnLeft){
+                return root;
+            }
+            Node childSide = pIsOnLeft ? root.left : root.right;
+            return ancestorHelper(childSide, p, q);
+        }
+        Node getSibling(Node node){
+            if (node == null || node.parent == null){
+                return null;
+            }
+            Node parent = node.parent;
+            return parent.left == node ? parent.right : parent.left;
+        }
+        Node goUpBy(Node node, int diff){
+            while (diff > 0 && node != null){
+                node = node.parent;
+                diff--;
+            }
+            return node;
+        }
+        int depth(Node node){
+            int depth = 0;
+            while(node != null){
+                node = node.parent;
+                depth++;
+            }
+            return depth;
         }
     }
     /*
@@ -272,5 +484,62 @@ public class tree {
         System.out.println(t1.isBalanced(t1.root));
         System.out.println(t1.isBalanced2(t1.root));
         System.out.println(t1.isBalanced3(t1.root));
+
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (1)           (7)
+           /   \         /   \
+         (0)   (2)     (5)   (8)
+                 \       \     \
+                 (3)     (6)   (9)
+                                 \
+                                 (10)
+         */
+        Tree t2 = new Tree(10);
+        System.out.println("Solution 1 - using inorder: " + t2.isValidateBST1());
+        System.out.println("Solution 2 - without array: " + t2.isValidateBST2());
+        System.out.println("Solution 3 - min/max: " + t2.isValidateBST3());
+
+        Tree t3 = new Tree(10);
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (1)           (7)
+           /   \         /   \
+         (0)   (2)     (5)   (8)
+                 \       \     \
+                  (3)    (6)   (9)
+         */
+        t3.findNext(t3.root.left.right.right);
+        t3.findNext(t3.root.left);
+        t3.findNext(t3.root);
+        t3.findNext(t3.root.left.left);
+        t3.findNext(t3.root.right.left.right);
+
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (1)           (7)
+           /   \         /   \
+         (0)   (2)     (5)   (8)
+                 \       \     \
+                  (3)    (6)   (9)
+         */
+        Tree t4 = new Tree(10);
+        Node fa = t4.commonAncestor(3, 5);
+        Node fa2 = t4.commonAncestor2(0, 3);
+        Node fa3 = t4.commonAncestor3(2, 8);
+        Node fa4 = t4.commonAncestor4(0, 3);
+        System.out.println("The first common ancestor is " + fa.data);
+        System.out.println("The first common ancestor is " + fa2.data);
+        System.out.println("The first common ancestor is " + fa3.data);
+        System.out.println("The first common ancestor is " + fa4.data);
     }
 }

@@ -2,10 +2,7 @@ package com.study.datastructure.자료구조;
 
 import org.w3c.dom.Node;
 
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Stack;
+import java.util.*;
 
 public class graphSearch {
     static class Queue<T>{
@@ -183,6 +180,87 @@ public class graphSearch {
             return false;
         }
     }
+
+    /**
+     * Graph에 명시된 관계에 따라 데이타 뽑아오기
+     */
+    static class Project{
+        private String name;
+        private LinkedList<Project> dependencies;
+        private boolean marked;
+        public Project(String name){
+            this.name = name;
+            this.marked = false;
+            this.dependencies = new LinkedList<Project>();
+        }
+        public void addDependency(Project project){
+            if (!dependencies.contains(project)){
+                dependencies.add(project);
+            }
+        }
+        public LinkedList<Project> getDependencies(){
+            return this.dependencies;
+        }
+        public String getName(){
+            return this.name;
+        }
+        public void setMarked(boolean marked){
+            this.marked = marked;
+        }
+        public boolean getMarked(){
+            return this.marked;
+        }
+    }
+    static class ProjectManager{
+        private HashMap<String, Project> projects;
+        public ProjectManager(String[] names, String[][] dependencies){
+            bulidProjects(names);
+            addDependencies(dependencies);
+        }
+        public void bulidProjects(String[] names){
+            projects = new HashMap<String, Project>();
+            for (int i = 0; i < names.length; i++){
+                projects.put(names[i], new Project(names[i]));
+            }
+        }
+        public void addDependencies(String[][] dependencies){
+            for (String[] dependency : dependencies){
+                Project before = findProject(dependency[0]);
+                Project after = findProject(dependency[1]);
+                after.addDependency(before);
+            }
+        }
+        private int index;
+        public Project[] buildOrder(){
+            initMarkingFlages();
+            Project[] ordered = new Project[this.projects.size()];
+            index = 0;
+            for (Project project : this.projects.values()){
+                buildOrder(project, ordered);
+            }
+            return ordered;
+        }
+        public void buildOrder(Project project, Project[] ordered){
+            if (!project.getDependencies().isEmpty()){
+                for (Project p : project.getDependencies()){
+                    buildOrder(p, ordered);
+                }
+            }
+            if (project.getMarked() == false){
+                project.setMarked(true);
+                ordered[index] = project;
+                index++;
+            }
+        }
+        private void initMarkingFlages(){
+            for (Project project : this.projects.values()){
+                project.setMarked(false);
+            }
+        }
+        private Project findProject(String name){
+            return projects.get(name);
+        }
+    }
     /*
      -------------------------
         0
@@ -225,5 +303,15 @@ public class graphSearch {
         //g.dfsR(3);
 
         System.out.println(g.search(1, 8));
+
+        String[] projects = {"a", "b", "c", "d", "e", "f", "g"};
+        String[][] dependencies = {{"f", "a"}, {"f", "b"}, {"f", "c"}, {"b", "a"}, {"c", "a"}, {"a", "e"}, {"b", "e"}, {"d", "g"}};
+        ProjectManager pm = new ProjectManager(projects, dependencies);
+        Project[] ps = pm.buildOrder();
+        for (Project p : ps){
+            if (p != null){
+                System.out.print(p.getName() + " ");
+            }
+        }
     }
 }
