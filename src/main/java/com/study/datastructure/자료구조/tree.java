@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
+import static com.study.datastructure.자료구조.tree.Tree.allSequences;
+
 public class tree {
     static class Node{
         int data;
@@ -31,6 +33,7 @@ public class tree {
             rootMap = new HashMap<Integer, Node>();
             //root = makeBST(0, size - 1);
             root = makeBST(0, size - 1, null);
+            //root = makeBST(0, size - 1);
             //root.right.right.right.right = new Node(10);
             //root.right.right.left = new Node(11);
             //root.right.right.right.left = new Node(10);
@@ -422,6 +425,70 @@ public class tree {
             }
             return depth;
         }
+        /**
+         * 이진검색트리를 만드는 모든 배열 찾기
+         */
+        static ArrayList<LinkedList<Integer>> allSequences(Node node){
+            ArrayList<LinkedList<Integer>> result = new ArrayList<LinkedList<Integer>>();
+            if (node == null){
+                result.add(new LinkedList<Integer>());
+                return result;
+            }
+            LinkedList<Integer> prefix = new LinkedList<Integer>();
+            prefix.add(node.data);
+
+            ArrayList<LinkedList<Integer>> leftSeq = allSequences(node.left);
+            ArrayList<LinkedList<Integer>> rightSeq = allSequences(node.right);
+
+            for (LinkedList<Integer> left : leftSeq) {
+                for (LinkedList<Integer> right : rightSeq) {
+                    /*
+                                (2)
+                               /   \
+                             /      \
+                           (0)      (4)
+                             \      /  \
+                             (1)  (3)  (5)
+                        root: 2
+                        left: 0->1
+                        right: 4->3, 4->5
+
+                        case1)
+                        left: 0->1
+                        right: 4->3
+
+                        case2)
+                        left: 0->1
+                        right: 4->5
+                     */
+                    ArrayList<LinkedList<Integer>> weaved = new ArrayList<LinkedList<Integer>>();
+                    weaveLists(left, right, weaved, prefix);
+                    result.addAll(weaved);
+                }
+            }
+            return result;
+        }
+        static void weaveLists(LinkedList<Integer> first, LinkedList<Integer> second, ArrayList<LinkedList<Integer>> results, LinkedList<Integer> prefix){
+            if (first.size() == 0 || second.size() == 0){
+                LinkedList<Integer> result = new LinkedList<Integer>();
+                for (int data : prefix) result.add(data);
+                result.addAll(first);
+                result.addAll(second);
+                results.add(result);
+                return;
+            }
+            int headFirst = first.removeFirst();
+            prefix.addLast(headFirst);
+            weaveLists(first, second, results, prefix);
+            prefix.removeLast();
+            first.addFirst(headFirst);
+
+            int headSecond = second.removeFirst();
+            prefix.addLast(headSecond);
+            weaveLists(first, second, results, prefix);
+            prefix.removeLast();
+            second.addFirst(headSecond);
+        }
     }
     /*
                 (1)
@@ -541,5 +608,29 @@ public class tree {
         System.out.println("The first common ancestor is " + fa2.data);
         System.out.println("The first common ancestor is " + fa3.data);
         System.out.println("The first common ancestor is " + fa4.data);
+
+        /*
+                    (2)
+                   /   \
+                 /      \
+               (0)      (3)
+                 \        \
+                 (1)      (4)
+
+           20134
+           20314
+           20341
+           23014
+           23041
+           23401
+        */
+        Tree t5 = new Tree(6);
+        ArrayList<LinkedList<Integer>> result = allSequences(t5.root);
+        for (LinkedList<Integer> l : result){
+            for (int data : l){
+                System.out.print(data);
+            }
+            System.out.println();
+        }
     }
 }
