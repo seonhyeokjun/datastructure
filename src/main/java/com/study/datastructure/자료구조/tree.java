@@ -2,10 +2,7 @@ package com.study.datastructure.자료구조;
 
 import org.w3c.dom.Node;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.logging.Level;
 
 import static com.study.datastructure.자료구조.tree.Tree.allSequences;
@@ -16,10 +13,52 @@ public class tree {
         Node left;
         Node right;
         Node parent;
+        int size = 0;
         Node(int data){
             this.data = data;
+            this.size = 1;
         }
         Node() {}
+        void insert(int data){
+            if (data <= this.data){
+                if (left == null){
+                    left = new Node(data);
+                } else {
+                    left.insert(data);
+                }
+            } else {
+                if (right == null){
+                    right = new Node(data);
+                } else {
+                    right.insert(data);
+                }
+            }
+            size++;
+        }
+        int size() {
+            return size;
+        }
+        Node find(int data){
+            if (data == this.data){
+                return this;
+            } else if (data < this.data){
+                return left != null ? left.find(data) : null;
+            } else if (data > this.data){
+                return right != null ? right.find(data) : null;
+            } else {
+                return null;
+            }
+        }
+        Node getIthNode(int i){
+            int leftSize = left == null ? 0 : left.size();
+            if (i < leftSize){
+                return left.getIthNode(i);
+            } else if (i == leftSize){
+                return this;
+            } else {
+                return right.getIthNode(i - (leftSize + 1));
+            }
+        }
     }
 
     static class Tree {
@@ -489,6 +528,243 @@ public class tree {
             prefix.removeLast();
             second.addFirst(headSecond);
         }
+
+        /**
+         * 서브트리인지 확인하기
+         */
+        boolean containsTree(Node t1, Node t2){
+            if (t2 == null) return true;
+            return subTree(t1, t2);
+        }
+        boolean subTree(Node t1, Node t2){
+            if (t1 == null){
+                return false;
+            } else if (t1.data == t2.data && matchTree(t1, t2)) {
+                return true;
+            }
+            return subTree(t1.left, t2) || subTree(t1.right, t2);
+        }
+        boolean matchTree(Node t1, Node t2){
+            if (t1 == null && t2 == null){
+                return true;
+            } else if (t1 == null || t2 == null){
+                return false;
+            } else if (t1.data != t2.data){
+                return false;
+            } else {
+                return matchTree(t1.left, t2.left) && matchTree(t1.right, t2.right);
+            }
+        }
+
+        /**
+         * 이진트리에서 랜덤노드가져오기
+         */
+        int size(){
+            return root == null ? 0 : root.size();
+        }
+
+        void insert(int data){
+            if (root == null) root = new Node(data);
+            else root.insert(data);
+        }
+        Node getRandomNode(){
+            if (root == null) return null;
+            Random random = new Random();
+            int i = random.nextInt(size());
+            return root.getIthNode(i);
+        }
+
+        /**
+         * 트리에서 주어진값을 합상으로가지는 경로의 개수찾기
+         */
+        int countPathsWithSum(int targetSum){
+            return countPathsWithSum(root, targetSum);
+        }
+        int countPathsWithSum(Node root, int targetSum){
+            if (root == null) return 0;
+            int pathsFromRoot = countPathsWithSumFromNode(root, targetSum, 0);
+            int pathsOnLeft = countPathsWithSum(root.left, targetSum);
+            int pathsOnRight = countPathsWithSum(root.right, targetSum);
+            return pathsFromRoot + pathsOnLeft + pathsOnRight;
+        }
+        int countPathsWithSumFromNode(Node node, int targetSum, int currSum){
+            if (node == null) return 0;
+            currSum += node.data;
+            int totalPaths = 0;
+            if (currSum == targetSum){
+                totalPaths++;
+            }
+            totalPaths += countPathsWithSumFromNode(node.left, targetSum, currSum);
+            totalPaths += countPathsWithSumFromNode(node.right, targetSum, currSum);
+            return totalPaths;
+        }
+        int countPathsWithSum2(int targetSum){
+            ArrayList<Integer> array = new ArrayList<Integer>();
+            return countPathsWithSum2(root, targetSum, array);
+        }
+        int countPathsWithSum2(Node root, int targetSum, ArrayList<Integer> array){
+            if (root == null) return 0;
+            int totalPaths = 0;
+            addValue(array, root.data);
+            totalPaths = countPaths(array, targetSum);
+            totalPaths += countPathsWithSum2(root.left, targetSum, array);
+            totalPaths += countPathsWithSum2(root.right, targetSum, array);
+            removeLast(array);
+            return totalPaths;
+        }
+        void addValue(ArrayList<Integer> array, int value){
+            for (int i = 0; i < array.size(); i++){
+                array.set(i, array.get(i) + value);
+            }
+            array.add(value);
+        }
+        void removeLast(ArrayList<Integer> array){
+            int value = array.remove(array.size() - 1);
+            for (int i = 0; i < array.size(); i++){
+                array.set(i, array.get(i) - value);
+            }
+        }
+        int countPaths(ArrayList<Integer> array, int targetSum){
+            int totalPaths = 0;
+            for (int i = 0; i < array.size(); i++){
+                if (array.get(i) == targetSum) totalPaths++;
+            }
+            return totalPaths;
+        }
+        int countPathsWithSum3(int targetSum){
+            HashMap<Integer, Integer> hashTable = new HashMap<Integer, Integer>();
+            hashTable.put(0, 1);
+            return countPathsWithSum3(root, targetSum, 0, hashTable);
+        }
+        int countPathsWithSum3(Node node, int targetSum, int currSum, HashMap<Integer, Integer> hashTable){
+            if (node == null) return 0;
+
+            currSum += node.data;
+            int sum = currSum - targetSum;
+            int totalPaths = hashTable.getOrDefault(sum, 0);
+            incrementHashTable(hashTable, currSum, 1);
+            totalPaths += countPathsWithSum3(node.left, targetSum, currSum, hashTable);
+            totalPaths += countPathsWithSum3(node.right, targetSum, currSum, hashTable);
+            incrementHashTable(hashTable, currSum, -1);
+            return totalPaths;
+        }
+        void incrementHashTable(HashMap<Integer, Integer> hashTable, int key, int val){
+            int newCount = hashTable.getOrDefault(key, 0) + val;
+            if (newCount == 0){
+                hashTable.remove(key);
+            } else {
+                hashTable.put(key, newCount);
+            }
+        }
+
+        /**
+         * 순회결과로 원본트리 재현하기
+         */
+        static int pIndex = 0;
+        public void buildTreeByInPre(int[] in, int[] pre){
+            pIndex = 0;
+            root = buildTreeByInPre(in, pre, 0, in.length - 1);
+        }
+        private Node buildTreeByInPre(int[] in, int[] pre, int start, int end){
+            if (start > end) return null;
+            Node node = new Node(pre[pIndex++]);
+            if (start == end) return node;
+            int mid = search(in, start, end, node.data);
+            node.left = buildTreeByInPre(in, pre, start, mid - 1);
+            node.right = buildTreeByInPre(in, pre, mid + 1, end);
+            return node;
+        }
+        public void buildTreeByInPost(int[] in, int[] post){
+            pIndex = post.length - 1;
+            root = buildTreeByInPost(in, post, 0, in.length - 1);
+        }
+        private Node buildTreeByInPost(int[] in, int[] post, int start, int end){
+            if (start > end) return null;
+            Node node = new Node(post[pIndex--]);
+            if (start == end) return node;
+            int mid = search(in, start, end, node.data);
+            node.right = buildTreeByInPost(in, post, mid + 1, end);
+            node.left = buildTreeByInPost(in, post, start, mid - 1);
+            return node;
+        }
+        private int search(int[] arr, int start, int end, int value){
+            int i;
+            for (i = start; i <= end; i++){
+                if (arr[i] == value) return i;
+            }
+            return i;
+        }
+        void printInorder(Node node){
+            if (node == null) return;
+            printInorder(node.left);
+            System.out.print(node.data + " ");
+            printInorder(node.right);
+        }
+
+        /**
+         * BST insertion/deletion
+         */
+        public Node search(Node root, int key){
+            if (root == null || root.data == key) return root;
+            if (root.data > key) return search(root.left, key);
+            return search(root.right, key);
+        }
+        public void insert2(int data){
+            root = insert(root, data);
+        }
+        private Node insert(Node root, int data){
+            if (root == null) {
+                root = new Node(data);
+                return root;
+            }
+            if (data < root.data){
+                root.left = insert(root.left, data);
+            } else if (data > root.data){
+                root.right = insert(root.right, data);
+            }
+            return root;
+        }
+        public void delete(int data){
+            root = delete(root, data);
+        }
+        private Node delete(Node root, int data){
+            if (root == null) return root;
+            if (data < root.data){
+                root.left = delete(root.left, data);
+            } else if (data > root.data){
+                root.right = delete(root.right, data);
+            } else {
+                if (root.left == null && root.right == null) {
+                    return null;
+                } else if (root.left == null){
+                    return root.right;
+                } else if (root.right == null) {
+                    return root.left;
+                }
+                root.data = findMin(root.right);
+                root.right = delete(root.right, root.data);
+            }
+            return root;
+        }
+        int findMin(Node root){
+            int min = root.data;
+            while (root.left != null){
+                min = root.left.data;
+                root = root.left;
+            }
+            return min;
+        }
+        public void inorder2(){
+            inorder2(root);
+            System.out.println("");
+        }
+        private void inorder2(Node root){
+            if (root != null){
+                inorder2(root.left);
+                System.out.print(root.data + " ");
+                inorder2(root.right);
+            }
+        }
     }
     /*
                 (1)
@@ -632,5 +908,110 @@ public class tree {
             }
             System.out.println();
         }
+
+        Tree t6 = new Tree();
+        Tree t7 = new Tree();
+        boolean result2;
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (1)           (7)
+           /   \         /   \
+         (0)   (2)     (5)   (8)
+                 \       \     \
+                  (3)    (6)   (9)
+         */
+        t6.root = t6.makeBST(0,9);
+        t7.root = t7.makeBST(5,9);
+        result2 = t6.containsTree(t6.root, t7.root);
+        System.out.println(result2);
+
+        /*
+            (8)
+           /   \
+         (7)   (9)
+         */
+        t7.root = t7.makeBST(7,9);
+        result2 = t6.containsTree(t6.root, t7.root);
+        System.out.println(result2);
+
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (0)           (5)
+               \            \
+               (1)          (7)
+                 \         /  \
+                  (2)    (6)  (8)
+                    \           \
+                    (3)         (9)
+
+         */
+        Tree t8 = new Tree();
+        t8.insert(4);
+        t8.insert(0);
+        t8.insert(1);
+        t8.insert(2);
+        t8.insert(5);
+        t8.insert(7);
+        t8.insert(8);
+        t8.insert(3);
+        t8.insert(6);
+        t8.insert(9);
+        System.out.println(t8.getRandomNode().data);
+
+        /*
+                    (4)
+                  /     \
+                /        \
+              /           \
+            (1)           (7)
+           /   \         /   \
+         (0)   (2)     (5)   (8)
+                 \       \     \
+                  (3)    (6)   (9)
+         */
+        Tree t9 = new Tree(10);
+        System.out.println(t9.countPathsWithSum(3));
+        System.out.println(t9.countPathsWithSum2(5));
+        System.out.println(t9.countPathsWithSum3(3));
+
+        Tree t10 = new Tree();
+        int[] pre = {4,2,1,3,6,5,7};
+        int[] in = {1,2,3,4,5,6,7};
+        int[] post = {1,3,2,5,7,6,4};
+        t10.buildTreeByInPre(in, pre);
+        t10.printInorder(t10.root);
+        System.out.println(" ");
+        t10.buildTreeByInPost(in, post);
+        t10.printInorder(t10.root);
+
+        /*
+                 4
+              /    \
+             2       6
+           /  \    /   \
+          1    3  5     7
+
+         */
+        Tree t11 = new Tree();
+        t11.insert2(4);
+        t11.insert2(2);
+        t11.insert2(1);
+        t11.insert2(3);
+        t11.insert2(6);
+        t11.insert2(5);
+        t11.insert2(7);
+
+        System.out.println("");
+        t11.inorder2();
+        t11.delete(5);
+        t11.delete(6);
+        t11.delete(2);
+        t11.inorder2();
     }
 }
